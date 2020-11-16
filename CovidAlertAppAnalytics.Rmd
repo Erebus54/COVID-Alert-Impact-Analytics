@@ -1,0 +1,72 @@
+---
+title: "COVID Alert App Analytics"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: ["twitter", "facebook", "linkedin"]
+    theme: bootstrap
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(rsconnect)
+library(rmarkdown)
+
+library(dplyr)
+library(tidyverse)
+library(lubridate)
+library(zoo)
+library(reshape2)
+
+
+library(data.table)
+
+library(plotly)
+
+Downloads <- fread("./datasets/Downloads.csv", encoding = 'UTF-8',data.table = F)
+Uploads <- fread("./datasets/Uploads.csv", encoding = 'UTF-8',data.table = F)
+
+Downloads$date <- as.Date(Downloads$date)
+Downloads$cumulative_ios_downloads_canada <- as.integer(gsub(",","",Downloads$cumulative_ios_downloads_canada))
+Downloads$cumulative_android_downloads_canada <- as.integer(gsub(",","",Downloads$cumulative_android_downloads_canada))
+Downloads$cumulative_total_downloads_canada <- as.integer(gsub(",","",Downloads$cumulative_total_downloads_canada))
+Downloads$daily_ios_downloads_canada <- as.integer(gsub(",","",Downloads$daily_ios_downloads_canada))
+Downloads$daily_android_downloads_canada <- as.integer(gsub(",","",Downloads$daily_android_downloads_canada))
+Downloads$daily_total_downloads_canada <- as.integer(gsub(",","",Downloads$daily_total_downloads_canada))
+
+Uploads$date <- as.Date(Uploads$date)
+```
+
+Overview
+===================================== 
+
+Row
+-------------------------------------
+    
+### <b> User Growth </b> 
+    
+```{r}
+```
+ 
+### <b> Mobile Downloads </b> 
+    
+```{r}
+``` 
+
+Row
+-------------------------------------
+    
+### <b> OS Composition </b> 
+    
+```{r}
+```
+    
+### Chart 4
+
+```{r}
+```
+
+
+Ontario 
+===================================== 

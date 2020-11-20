@@ -3,7 +3,6 @@ title: "COVID Alert App Analytics"
 output: 
   flexdashboard::flex_dashboard:
     orientation: rows
-    social: ["twitter", "facebook", "linkedin"]
     theme: bootstrap
 runtime: shiny
 ---
@@ -41,17 +40,82 @@ Uploads$date <- as.Date(Uploads$date)
 Overview
 ===================================== 
 
-Row
+Row {.tabset .tabset-fade}
 -------------------------------------
     
-### <b> User Growth </b> 
-    
-```{r}
-```
+
  
-### <b> Mobile Downloads </b> 
+### <b> Daily New Users </b> 
     
 ```{r}
+#Daily OS Downloads 
+osDL <- Downloads %>% 
+  dplyr::select(date, daily_ios_downloads_canada, daily_android_downloads_canada, daily_total_downloads_canada) 
+  
+plot_ly(data = Downloads, 
+        x = ~date, 
+        y = ~daily_total_downloads_canada, 
+        type = 'scatter', 
+        mode = 'lines', 
+        name = "Total Downloads", 
+        
+        hoverinfo = 'text',
+        text = ~paste("+", format(daily_total_downloads_canada, big.mark =  ","), "<br>","New Users", sep = ""),
+        
+        showlegend = F, 
+        line = list(color = "#F92672", width = 1.5)) %>% 
+  
+  add_trace(y = ~daily_ios_downloads_canada, name = "iOS", 
+            line = list(color = "#007aff"), 
+            hoverinfo = 'text',
+            text = ~paste("+", format(daily_ios_downloads_canada, big.mark =  ","), "<br>","New iOS Users", sep = "")
+            ) %>% 
+  
+  add_trace(y = ~daily_android_downloads_canada, name = "Android",
+            line = list(color = "#4cd964"),
+            hoverinfo = 'text',
+            text = ~paste("+", format(daily_android_downloads_canada, big.mark =  ","), "<br>","New Android Users", sep = "")
+            ) %>% 
+  
+  layout(xaxis = list(title = "", tickfont = list(color = "White")),
+         yaxis = list(title = "User Growth", tickfont = list(color = "White")),
+         hovermode = 'x unified', 
+         plot_bgcolor  = "black",
+         paper_bgcolor = "black")
+
+``` 
+
+### <b> Total Growth Rate </b> 
+    
+```{r}
+Downloads <- Downloads %>% 
+  dplyr::mutate(User_Growth = cumulative_total_downloads_canada - lag(cumulative_total_downloads_canada), 
+                Growth_Rate = round(User_Growth / lag(cumulative_total_downloads_canada) * 100,2), 
+                iOS_Growth = daily_ios_downloads_canada - lag(daily_ios_downloads_canada)
+  )
+
+plot_ly(data = Downloads, 
+        x = ~date, 
+        y = ~Growth_Rate, 
+        type = 'scatter', 
+        mode = 'lines', 
+        
+        #removing first value of 27K% user growth 
+        
+        transforms = list(list(type = 'filter',
+                               target = 'y', 
+                               operation = '<', 
+                               value = 100)),
+        line = list(color = "#F92672", width = 2), 
+        
+        hoverinfo = 'text',
+        text = ~paste(format(Growth_Rate), "%", "<br>","User Growth", sep = "")) %>% 
+  
+  layout(xaxis = list(title = "", tickfont = list(color = "White")),
+         yaxis = list(title = "User Growth", tickfont = list(color = "White")),
+         hovermode = 'x unified', 
+         plot_bgcolor  = "black",
+         paper_bgcolor = "black")
 ``` 
 
 Row
@@ -60,13 +124,118 @@ Row
 ### <b> OS Composition </b> 
     
 ```{r}
-```
+
+# OS compositions
+OS_comp <- Downloads %>% 
+  dplyr::filter(date == max(date)) %>% 
+  dplyr::select(cumulative_ios_downloads_canada,
+                cumulative_android_downloads_canada) %>% 
+  #convert columns to rows 
+  tidyr::pivot_longer(
+    cols = starts_with("cumulative_"), 
+    names_to = "OS", 
+    values_to = "Downloads", 
+    names_prefix = "cumulative_")
+
+
+OS_comp$OS[OS_comp$OS == "ios_downloads_canada"] <- "iOS"
+OS_comp$OS[OS_comp$OS == "android_downloads_canada"] <- "android"
+
+colors = c(
+  #ios 
+  "#007aff",
+  #android 
+  "#4cd964")
+
+  plot_ly(data = OS_comp, 
+        labels = ~OS, 
+        values = ~Downloads, 
+        type = 'pie', 
+        marker = list(colors = colors, 
+                      line = list(color = '#FFFFFF', width = 10)),
+        showlegend = F, 
+        
+        textposition = 'inside',
+        textinfo = 'label+percent',
+        insidetextfont = list(color = '#FFFFFF'),
+        hoverinfo = 'text',
+        text = ~paste(OS, "<br>",
+                      format(Downloads, big.mark = ","), "Downloads", sep = " ")
+        ) 
     
-### Chart 4
+```
+
+### <b> Cumulatives </b> 
 
 ```{r}
+plot_ly(data = Downloads, 
+        x = ~date, 
+        y = ~cumulative_total_downloads_canada, 
+        type = 'scatter', mode = 'lines', fill = 'tozeroy', name = "", 
+        
+        hoverinfo = 'text',
+        text = ~paste("<br>", date, 
+                      "<br>","+", format(cumulative_total_downloads_canada, big.mark =  ","), 
+                      "<br>","Total Installs", sep = ""),
+        
+        showlegend = F) %>% 
+  
+  add_trace(y = ~cumulative_android_downloads_canada, name = "",
+            hoverinfo = 'text',
+            text = ~paste("<br>" ,
+                          "+", format(cumulative_android_downloads_canada, big.mark =  ","), 
+                          "<br>","Android Installs", sep = "")) %>% 
+  
+  add_trace(y = ~cumulative_ios_downloads_canada, name = "", 
+            hoverinfo = 'text',
+            text = ~paste("+", format(cumulative_ios_downloads_canada, big.mark =  ","), "<br>","iOS Installs", sep = "")) %>% 
+  
+  layout(xaxis = list(title = "", tickfont = list(color = "White")),
+         yaxis = list(title = "Total App Installs", tickfont = list(color = "White")),
+         hovermode = 'x unified', 
+         plot_bgcolor  = "black",
+         paper_bgcolor = "black")
 ```
-
 
 Ontario 
 ===================================== 
+
+About this Site 
+===================================== 
+
+#### Last Update  
+
+`r format(Sys.time(), "%d %B, %Y")`
+
+<br>
+
+#### Background
+*"Nothing in life is to be feared, it is only to be understood. Now is the time to understand more, so that we may fear less" - Marie Curie*  
+
+<br>
+
+#### Code
+Code and input data used to generate this web app are available on [Github](https://github.com/Erebus54/Ontario-Covid19-Tracker-Dashboard).
+
+<br>
+
+#### Sources 
+
+**COVID Alert Impact Data**: [Open Data Ontaro](https://data.ontario.ca/dataset/06a61019-62c1-48d8-8d4d-2267ae0f1144) broke down into the following two datasets: 
+
+* COVID 19 Alert Downloads - Canada 
+* Uploads of COVID-19 diagnosis to COVID Alert
+
+*Contains information licensed under the Open Government Licence – Ontario*
+
+<br>
+
+#### Author 
+
+Patrick Schnurbusch 
+
+<br>
+
+#### Contact 
+
+patrick.schnurbusch@gmail.com
